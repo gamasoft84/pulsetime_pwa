@@ -72,12 +72,14 @@ npm run generate:vapid
 **Opción A — todo en Vercel (recomendado):**
 
 ```bash
-npx vercel dev
+npm run dev:vercel
 ```
+
+(Equivale a `vercel dev` usando la CLI incluida en el proyecto; si tienes Vercel instalado globalmente, también vale `vercel dev`.)
 
 Abre la URL que indique Vercel (suele ser `http://localhost:3000`).
 
-**Opción B — Vite + proxy:** en otra terminal `npx vercel dev --listen 3000`, luego:
+**Opción B — Vite + proxy:** en otra terminal `npm run dev:vercel -- --listen 3000`, luego:
 
 ```bash
 npm run dev
