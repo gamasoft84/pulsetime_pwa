@@ -89,9 +89,28 @@ Vite (5173) proxifica `/api` → `127.0.0.1:3000`.
 
 ## Producción
 
+Si el build en Vercel falla en `npm install` por dependencias peer (Vite 8 + `vite-plugin-pwa`), el repo incluye [`.npmrc`](.npmrc) con `legacy-peer-deps=true`; asegúrate de **subir ese archivo** al repositorio.
+
 1. Conecta el repo a Vercel o `vercel --prod`.
 2. Configura las variables de entorno.
-3. El **Cron** (`/api/cron/dispatch` cada 5 minutos) requiere plan que incluya Cron Jobs en Vercel.
+3. Ajusta el **cron** si quieres otra hora (ver abajo).
+
+### Cron: qué te conviene
+
+**Uso personal (“solo revisar una vez al día”)** — es lo que encaja contigo:
+
+- Deja **un cron diario** en [`vercel.json`](vercel.json) (p. ej. `0 8 * * *` = una vez al día a las **08:00 UTC**).
+- Elige la hora en **UTC** que sea tu “ventana” habitual (mañana, cuando sueles mirar el móvil). Ejemplo: si en invierno en Chile quieres ~08:00 **hora local**, eso suele ser **11:00 UTC** → usa `0 11 * * *`.
+- Cada ejecución **procesa todos** los recordatorios que ya tocaron (`fire_at` en el pasado). No hace falta revisar cada 5 minutos si te basta un repaso diario; el aviso puede llegar **más tarde ese mismo día o al día siguiente** según la hora que elijas respecto a cada `trigger_at`.
+
+**Si más adelante quieres más precisión (casi a la hora exacta):**
+
+| Opción | Idea |
+|--------|------|
+| **Vercel Pro** | En `vercel.json` puedes poner `*/5 * * * *` (cada 5 minutos) u otra expresión frecuente. |
+| **Plan Hobby + cron externo** | Servicio gratuito (p. ej. cron-job.org) que llame cada 5–15 min a `https://TU_DOMINIO/api/cron/dispatch` con header `Authorization: Bearer TU_CRON_SECRET`. Puedes **quitar** el bloque `crons` de `vercel.json` para no duplicar, o dejar solo el diario como respaldo. |
+
+**Resumen:** para ti, **diario + una hora UTC acorde a tu rutina** es la opción simple, barata y alineada con Hobby. La flexibilidad “cada 5 minutos” es para quien pase a **Pro** o use un **disparador externo**.
 
 ## iPhone
 
