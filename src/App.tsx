@@ -402,10 +402,7 @@ function MainApp() {
       </section>
 
       <footer className="footer">
-        <p className="muted small">
-          Cada usuario ve solo sus recordatorios. Variables: <code>DATABASE_URL</code>, Clerk, VAPID,{' '}
-          <code>CRON_SECRET</code> (ver README).
-        </p>
+        
       </footer>
     </div>
   )

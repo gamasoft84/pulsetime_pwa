@@ -2,7 +2,8 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const devPort = process.env.PORT ? Number(process.env.PORT) : 3000
+/** Sin PORT (solo `npm run dev`): Vite en 5173 y proxy `/api` → 3000 (donde debe estar `vercel dev`). Con PORT (p. ej. vercel dev): Vite usa ese puerto. */
+const devPort = process.env.PORT ? Number(process.env.PORT) : 5173
 
 /**
  * En `serve`, vite-plugin-pwa (injectManifest + devOptions) puede hacer que
@@ -34,7 +35,10 @@ export default defineConfig(({ command }) => ({
     /** Evita precargas que a veces disparan transform raro con proxies (p. ej. vercel dev). */
     preTransformRequests: false,
     proxy: {
-      '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true },
+      '/api': {
+        target: process.env.VITE_API_PROXY ?? 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
     },
   },
   plugins: [
