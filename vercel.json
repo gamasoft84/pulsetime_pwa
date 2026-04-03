@@ -1,6 +1,7 @@
 {
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],

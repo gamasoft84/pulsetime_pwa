@@ -80,9 +80,11 @@ npm run generate:vapid
 npm run dev:vercel
 ```
 
-(Equivale a `vercel dev` usando la CLI incluida en el proyecto; si tienes Vercel instalado globalmente, también vale `vercel dev`.)
+(Usa la CLI incluida en el proyecto; también vale `npx vercel dev` o un `vercel` global.)
 
-Abre la URL que indique Vercel (suele ser `http://localhost:3000`).
+**Si ves `sh: yarn: command not found`** al arrancar: en el dashboard de Vercel, abre el proyecto **pulsetime-pwa** → **Settings** → **General** → **Build & Development Settings** → **Install Command** y cámbialo a **`npm install --legacy-peer-deps`** (o bórralo para que no fuerce `yarn`). Eso ocurre porque al enlazar el proyecto, Vercel puede guardar `yarn install` aunque en el repo haya `package-lock.json` y `vercel.json` con npm. Tras guardar, vuelve a ejecutar `npm run dev:vercel`.
+
+Abre la URL que indique la CLI (suele ser `http://localhost:3000`).
 
 **Opción B — Vite + proxy:** en otra terminal `npm run dev:vercel -- --listen 3000`, luego:
 

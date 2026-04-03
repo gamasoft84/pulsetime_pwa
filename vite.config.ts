@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+const devPort = process.env.PORT ? Number(process.env.PORT) : 5173
+
+// https://vite.dev/config/server-options.html#server-port
 export default defineConfig({
   server: {
+    port: devPort,
+    strictPort: Boolean(process.env.PORT),
     proxy: {
       '/api': { target: 'http://127.0.0.1:3000', changeOrigin: true },
     },
