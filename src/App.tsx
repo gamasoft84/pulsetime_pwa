@@ -5,7 +5,7 @@ import {
   fetchReminders,
   updateReminder,
 } from './api'
-import { pushSupported, subscribeToPush } from './push'
+import { getPushAvailability, subscribeToPush } from './push'
 import type { Recurrence, Reminder, ReminderKind } from './types'
 
 const KIND_OPTIONS: { value: ReminderKind; label: string }[] = [
@@ -168,6 +168,8 @@ export default function App() {
     }
   }
 
+  const pushAvailability = getPushAvailability()
+
   return (
     <div className="app">
       <header className="header">
@@ -178,18 +180,21 @@ export default function App() {
       <section className="card onboarding">
         <h2>En iPhone</h2>
         <ol>
-          <li>Abre este sitio en <strong>Safari</strong>.</li>
+          <li>Abre este sitio en <strong>Safari</strong> (iPhone).</li>
           <li>
             <strong>Compartir</strong> → <strong>Añadir a pantalla de inicio</strong>.
           </li>
-          <li>Abre la app desde el icono y pulsa activar notificaciones abajo.</li>
+          <li>
+            <strong>Importante:</strong> abre PulseTime <strong>tocando el icono</strong> en la pantalla de inicio. En una pestaña normal de Safari, Apple no permite Web Push; por eso verías “no disponible”.
+          </li>
+          <li>Desde la app instalada, pulsa el botón de abajo para permitir notificaciones.</li>
         </ol>
-        {pushSupported() ? (
+        {pushAvailability.ok ? (
           <button type="button" className="btn primary" onClick={() => void handleSubscribePush()}>
             Activar notificaciones push
           </button>
         ) : (
-          <p className="muted">Push no disponible en este navegador.</p>
+          <p className="muted push-hint">{pushAvailability.hint}</p>
         )}
         {pushStatus ? <p className="push-feedback">{pushStatus}</p> : null}
       </section>

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getSql } from '../_lib/db'
+import { sendJson } from '../_lib/http'
 import { rescheduleReminder } from '../_lib/remindersDb'
 
 const KINDS = new Set([
@@ -14,15 +15,10 @@ const KINDS = new Set([
 
 const RECURRENCES = new Set(['none', 'daily', 'weekly', 'monthly', 'yearly'])
 
-function json(res: VercelResponse, status: number, data: unknown) {
-  res.status(status).setHeader('Content-Type', 'application/json')
-  res.send(JSON.stringify(data))
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const id = typeof req.query.id === 'string' ? req.query.id : req.query.id?.[0]
   if (!id) {
-    json(res, 400, { error: 'id requerido' })
+    sendJson(res, 400, { error: 'id requerido' })
     return
   }
 
@@ -31,15 +27,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'DELETE') {
       await sql`DELETE FROM reminders WHERE id = ${id}`
-      json(res, 200, { ok: true })
+      sendJson(res, 200, { ok: true })
       return
     }
 
     if (req.method === 'PATCH') {
-      const b = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+      const b =
+        typeof req.body === 'string'
+          ? JSON.parse(req.body)
+          : req.body && typeof req.body === 'object'
+            ? req.body
+            : {}
       const existing = await sql`SELECT id FROM reminders WHERE id = ${id} LIMIT 1`
       if (!existing.length) {
-        json(res, 404, { error: 'no encontrado' })
+        sendJson(res, 404, { error: 'no encontrado' })
         return
       }
 
@@ -63,27 +64,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const is_active = b.is_active !== undefined ? Boolean(b.is_active) : undefined
 
       if (title !== undefined && !title) {
-        json(res, 400, { error: 'title vacío' })
+        sendJson(res, 400, { error: 'title vacío' })
         return
       }
       if (kind !== undefined && !KINDS.has(kind)) {
-        json(res, 400, { error: 'kind inválido' })
+        sendJson(res, 400, { error: 'kind inválido' })
         return
       }
       if (recurrence !== undefined && !RECURRENCES.has(recurrence)) {
-        json(res, 400, { error: 'recurrence inválida' })
+        sendJson(res, 400, { error: 'recurrence inválida' })
         return
       }
       if (trigger_at !== undefined) {
         const d = new Date(trigger_at)
         if (Number.isNaN(d.getTime())) {
-          json(res, 400, { error: 'trigger_at inválido' })
+          sendJson(res, 400, { error: 'trigger_at inválido' })
           return
         }
       }
       if (days_before !== undefined && days_before !== null) {
         if (!Number.isInteger(days_before) || days_before < 0) {
-          json(res, 400, { error: 'days_before inválido' })
+          sendJson(res, 400, { error: 'days_before inválido' })
           return
         }
       }
@@ -107,13 +108,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         SELECT id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
         FROM reminders WHERE id = ${id} LIMIT 1
       `
-      json(res, 200, { reminder: rows[0] })
+      sendJson(res, 200, { reminder: rows[0] })
       return
     }
 
     res.status(405).setHeader('Allow', 'PATCH, DELETE').end()
   } catch (e) {
     console.error(e)
-    json(res, 500, { error: e instanceof Error ? e.message : 'Error' })
+    sendJson(res, 500, { error: e instanceof Error ? e.message : 'Error' })
   }
 }

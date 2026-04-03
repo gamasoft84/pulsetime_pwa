@@ -238,3 +238,8 @@ body {
   font-size: 0.9rem;
   color: #86efac;
 }
+
+.push-hint {
+  line-height: 1.45;
+  margin: 0;
+}
