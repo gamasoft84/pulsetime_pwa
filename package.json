@@ -13,6 +13,8 @@
     "generate:vapid": "node scripts/generate-vapid.mjs"
   },
   "dependencies": {
+    "@clerk/backend": "^3.2.4",
+    "@clerk/clerk-react": "^5.61.4",
     "@neondatabase/serverless": "^1.0.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
+import { getClerkUserId } from './_lib/auth.js'
 import { getSql } from './_lib/db.js'
 import { sendJson } from './_lib/http.js'
 import { rescheduleReminder } from './_lib/remindersDb.js'
@@ -17,12 +18,18 @@ const RECURRENCES = new Set(['none', 'daily', 'weekly', 'monthly', 'yearly'])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    const userId = await getClerkUserId(req.headers.authorization)
+    if (!userId) {
+      sendJson(res, 401, { error: 'No autorizado. Inicia sesión.' })
+      return
+    }
+
     const sql = getSql() as NeonQueryFunction
 
     if (req.method === 'GET') {
       const rows = await sql`
-        SELECT id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
-        FROM reminders ORDER BY trigger_at ASC
+        SELECT id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
+        FROM reminders WHERE user_id = ${userId} ORDER BY trigger_at ASC
       `
       sendJson(res, 200, { reminders: rows })
       return
@@ -75,8 +82,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const inserted = await sql`
-        INSERT INTO reminders (title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active)
+        INSERT INTO reminders (user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active)
         VALUES (
+          ${userId},
           ${title},
           ${kind},
           ${triggerDate.toISOString()},
@@ -86,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ${notes},
           ${is_active}
         )
-        RETURNING id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
+        RETURNING id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
       `
       const row = inserted[0] as { id: string }
       await rescheduleReminder(sql, row.id)

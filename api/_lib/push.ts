@@ -15,10 +15,15 @@ export function configurePush() {
 
 type SubRow = { endpoint: string; p256dh: string; auth: string }
 
-export async function sendPayloadToAllSubscriptions(payload: { title: string; body: string }) {
+export async function sendPayloadToUserSubscriptions(
+  userId: string,
+  payload: { title: string; body: string },
+) {
   configurePush()
   const sql = getSql()
-  const subs = (await sql`SELECT endpoint, p256dh, auth FROM push_subscriptions`) as SubRow[]
+  const subs = (await sql`
+    SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ${userId}
+  `) as SubRow[]
   const data = JSON.stringify(payload)
   await Promise.allSettled(
     subs.map((s) =>

@@ -2,6 +2,21 @@ import type { Reminder } from './types'
 
 const base = ''
 
+let authTokenGetter: (() => Promise<string | null>) | null = null
+
+export function setApiAuthTokenGetter(fn: () => Promise<string | null>) {
+  authTokenGetter = fn
+}
+
+async function withAuth(init: RequestInit = {}): Promise<RequestInit> {
+  const headers = new Headers(init.headers)
+  if (authTokenGetter) {
+    const t = await authTokenGetter()
+    if (t) headers.set('Authorization', `Bearer ${t}`)
+  }
+  return { ...init, headers }
+}
+
 async function readApiError(res: Response): Promise<string> {
   const ct = res.headers.get('content-type') ?? ''
   if (ct.includes('application/json')) {
@@ -22,20 +37,23 @@ async function readApiError(res: Response): Promise<string> {
 }
 
 export async function fetchReminders(): Promise<Reminder[]> {
-  const r = await fetch(`${base}/api/reminders`)
+  const r = await fetch(`${base}/api/reminders`, await withAuth())
   if (!r.ok) throw new Error(await readApiError(r))
   const j = (await r.json()) as { reminders: Reminder[] }
   return j.reminders
 }
 
 export async function createReminder(
-  body: Omit<Reminder, 'id' | 'created_at' | 'updated_at'>,
+  body: Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
 ): Promise<Reminder> {
-  const r = await fetch(`${base}/api/reminders`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  const r = await fetch(
+    `${base}/api/reminders`,
+    await withAuth({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  )
   if (!r.ok) throw new Error(await readApiError(r))
   const j = (await r.json()) as { reminder: Reminder }
   return j.reminder
@@ -43,20 +61,23 @@ export async function createReminder(
 
 export async function updateReminder(
   id: string,
-  patch: Partial<Omit<Reminder, 'id' | 'created_at' | 'updated_at'>>,
+  patch: Partial<Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at'>>,
 ): Promise<Reminder> {
-  const r = await fetch(`${base}/api/reminder/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  })
+  const r = await fetch(
+    `${base}/api/reminder/${id}`,
+    await withAuth({
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    }),
+  )
   if (!r.ok) throw new Error(await readApiError(r))
   const j = (await r.json()) as { reminder: Reminder }
   return j.reminder
 }
 
 export async function deleteReminder(id: string): Promise<void> {
-  const r = await fetch(`${base}/api/reminder/${id}`, { method: 'DELETE' })
+  const r = await fetch(`${base}/api/reminder/${id}`, await withAuth({ method: 'DELETE' }))
   if (!r.ok) throw new Error(await readApiError(r))
 }
 
@@ -68,10 +89,13 @@ export async function fetchVapidPublicKey(): Promise<string> {
 }
 
 export async function postPushSubscription(sub: PushSubscriptionJSON): Promise<void> {
-  const r = await fetch(`${base}/api/push/subscribe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(sub),
-  })
+  const r = await fetch(
+    `${base}/api/push/subscribe`,
+    await withAuth({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub),
+    }),
+  )
   if (!r.ok) throw new Error(await readApiError(r))
 }

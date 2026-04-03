@@ -1,3 +1,4 @@
+import { SignedIn, SignedOut, SignIn, UserButton } from '@clerk/clerk-react'
 import { useCallback, useEffect, useState } from 'react'
 import {
   createReminder,
@@ -5,6 +6,7 @@ import {
   fetchReminders,
   updateReminder,
 } from './api'
+import { AuthApiSync } from './AuthApiSync'
 import { getPushAvailability, subscribeToPush } from './push'
 import type { Recurrence, Reminder, ReminderKind } from './types'
 
@@ -51,7 +53,7 @@ function emptyForm() {
   }
 }
 
-export default function App() {
+function MainApp() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -173,8 +175,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>PulseTime</h1>
-        <p className="tagline">Recordatorios que llegan a tu iPhone (PWA + Web Push)</p>
+        <div className="header-top">
+          <div>
+            <h1>PulseTime</h1>
+            <p className="tagline">Recordatorios que llegan a tu iPhone (PWA + Web Push)</p>
+          </div>
+          <UserButton afterSignOutUrl="/" />
+        </div>
       </header>
 
       <section className="card onboarding">
@@ -349,9 +356,30 @@ export default function App() {
 
       <footer className="footer">
         <p className="muted small">
-          Despliega en Vercel con <code>DATABASE_URL</code>, VAPID y <code>CRON_SECRET</code> (ver README).
+          Cada usuario ve solo sus recordatorios. Variables: <code>DATABASE_URL</code>, Clerk, VAPID,{' '}
+          <code>CRON_SECRET</code> (ver README).
         </p>
       </footer>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <>
+      <SignedOut>
+        <div className="app auth-gate">
+          <h1>PulseTime</h1>
+          <p className="tagline">Inicia sesión para gestionar tus recordatorios y notificaciones.</p>
+          <div className="auth-card">
+            <SignIn routing="hash" signUpUrl="#/sign-up" />
+          </div>
+        </div>
+      </SignedOut>
+      <SignedIn>
+        <AuthApiSync />
+        <MainApp />
+      </SignedIn>
+    </>
   )
 }

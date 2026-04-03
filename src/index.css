@@ -32,6 +32,26 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.auth-gate {
+  padding-top: 2rem;
+}
+
+.auth-gate .tagline {
+  margin-bottom: 1.5rem;
+}
+
+.auth-card {
+  max-width: 24rem;
+}
+
 .header h1 {
   margin: 0;
   font-size: 1.75rem;

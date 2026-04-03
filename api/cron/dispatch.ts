@@ -3,7 +3,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getSql } from '../_lib/db.js'
 import { sendJson } from '../_lib/http.js'
 import { advanceReminderAfterSend } from '../_lib/remindersDb.js'
-import { sendPayloadToAllSubscriptions } from '../_lib/push.js'
+import { sendPayloadToUserSubscriptions } from '../_lib/push.js'
 import type { Recurrence } from '../_lib/schedule.js'
 
 type DueRow = {
@@ -11,6 +11,7 @@ type DueRow = {
   sched_title: string
   sched_body: string | null
   reminder_id: string
+  user_id: string
   title: string
   kind: string
   trigger_at: string
@@ -44,6 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sn.title AS sched_title,
         sn.body AS sched_body,
         r.id AS reminder_id,
+        r.user_id,
         r.title,
         r.kind,
         r.trigger_at,
@@ -63,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const row of due) {
       const bodyText = (row.sched_body ?? '').trim()
       try {
-        await sendPayloadToAllSubscriptions({
+        await sendPayloadToUserSubscriptions(row.user_id, {
           title: row.sched_title,
           body: bodyText,
         })

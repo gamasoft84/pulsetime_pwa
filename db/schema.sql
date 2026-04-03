@@ -3,6 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS reminders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
   title TEXT NOT NULL,
   kind TEXT NOT NULL,
   trigger_at TIMESTAMPTZ NOT NULL,
@@ -14,6 +15,8 @@ CREATE TABLE IF NOT EXISTS reminders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders (user_id);
 
 CREATE TABLE IF NOT EXISTS scheduled_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -31,8 +34,11 @@ CREATE INDEX IF NOT EXISTS idx_sched_pending_fire
 
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
   endpoint TEXT NOT NULL UNIQUE,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions (user_id);

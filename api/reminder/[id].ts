@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
+import { getClerkUserId } from '../_lib/auth.js'
 import { getSql } from '../_lib/db.js'
 import { sendJson } from '../_lib/http.js'
 import { rescheduleReminder } from '../_lib/remindersDb.js'
@@ -23,10 +24,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const userId = await getClerkUserId(req.headers.authorization)
+    if (!userId) {
+      sendJson(res, 401, { error: 'No autorizado. Inicia sesión.' })
+      return
+    }
+
     const sql = getSql() as NeonQueryFunction
 
     if (req.method === 'DELETE') {
-      await sql`DELETE FROM reminders WHERE id = ${id}`
+      const del = await sql`DELETE FROM reminders WHERE id = ${id} AND user_id = ${userId} RETURNING id`
+      if (!del.length) {
+        sendJson(res, 404, { error: 'no encontrado' })
+        return
+      }
       sendJson(res, 200, { ok: true })
       return
     }
@@ -38,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : req.body && typeof req.body === 'object'
             ? req.body
             : {}
-      const existing = await sql`SELECT id FROM reminders WHERE id = ${id} LIMIT 1`
+      const existing = await sql`SELECT id FROM reminders WHERE id = ${id} AND user_id = ${userId} LIMIT 1`
       if (!existing.length) {
         sendJson(res, 404, { error: 'no encontrado' })
         return
@@ -100,13 +111,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           notes = COALESCE(${notes !== undefined ? notes : null}, notes),
           is_active = COALESCE(${is_active !== undefined ? is_active : null}, is_active),
           updated_at = NOW()
-        WHERE id = ${id}
+        WHERE id = ${id} AND user_id = ${userId}
       `
 
       await rescheduleReminder(sql, id)
       const rows = await sql`
-        SELECT id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
-        FROM reminders WHERE id = ${id} LIMIT 1
+        SELECT id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
+        FROM reminders WHERE id = ${id} AND user_id = ${userId} LIMIT 1
       `
       sendJson(res, 200, { reminder: rows[0] })
       return

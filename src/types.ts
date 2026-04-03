@@ -10,6 +10,7 @@ export type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export type Reminder = {
   id: string
+  user_id: string
   title: string
   kind: ReminderKind
   trigger_at: string

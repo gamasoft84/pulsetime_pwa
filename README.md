@@ -2,13 +2,14 @@
 
 PWA con **Vite + React** para recordatorios (pagos, suscripciones, eventos, mascotas) y **notificaciones Web Push** en iPhone (Safari, iOS 16.4+, app añadida a la pantalla de inicio).
 
-Backend: **Vercel** (API serverless + Cron) y **Neon** (Postgres).
+Backend: **Vercel** (API serverless + Cron) y **Neon** (Postgres). Cada persona **inicia sesión con [Clerk](https://clerk.com)** y solo ve y recibe notificaciones de **sus** recordatorios (`user_id` en base de datos).
 
 ## Requisitos previos
 
 1. Cuenta en [Neon](https://neon.tech) y proyecto Postgres.
 2. Cuenta en [Vercel](https://vercel.com).
-3. Crear las tablas en Neon (paso detallado abajo).
+3. Aplicación en [Clerk](https://dashboard.clerk.com) (email/redes sociales; sin configurar dominios custom al inicio).
+4. Crear las tablas en Neon (paso detallado abajo). Si **ya tenías** tablas sin `user_id`, ejecuta antes [`db/migrations/002_clerk_multi_user.sql`](db/migrations/002_clerk_multi_user.sql) (los datos antiguos quedan con `legacy_pre_auth` y no los verán usuarios de Clerk hasta que recrees recordatorios).
 
 ### Paso 1 detallado: ejecutar `db/schema.sql` en Neon
 
@@ -52,11 +53,15 @@ Copia [`.env.example`](.env.example) a `.env.local` para desarrollo con `vercel 
 | Variable | Descripción |
 |----------|-------------|
 | `DATABASE_URL` | Cadena de conexión de Neon |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clave **publishable** de Clerk (también en Vercel para que el **build** la incruste en el cliente) |
+| `CLERK_SECRET_KEY` | Clave **secret** de Clerk (solo servidor; en Vercel, **no** marques como exponible al cliente) |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Generar con `npm run generate:vapid` |
 | `VAPID_SUBJECT_MAIL` | Ej. `mailto:tu@email.com` |
 | `CRON_SECRET` | Cadena aleatoria; Vercel la envía en `Authorization: Bearer …` al cron |
 
-En el dashboard de Vercel, añade las mismas variables al proyecto (Production y Preview).
+En el dashboard de Vercel, añade las mismas variables al proyecto (Production y Preview). **Importante:** sin `VITE_CLERK_PUBLISHABLE_KEY` en el entorno de build, la app no podrá mostrar el login en producción.
+
+En Clerk → **Configure** → **Paths**, deja permitidos los orígenes de tu app (p. ej. `https://tu-proyecto.vercel.app` y `http://localhost:3000` para `vercel dev`).
 
 ## Desarrollo local
 

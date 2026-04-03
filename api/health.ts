@@ -10,6 +10,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   sendJson(res, 200, {
     ok: true,
     hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+    hasClerkSecret: Boolean(process.env.CLERK_SECRET_KEY),
     hasVapidPublic: Boolean(process.env.VAPID_PUBLIC_KEY),
     hasVapidPrivate: Boolean(process.env.VAPID_PRIVATE_KEY),
     hasCronSecret: Boolean(process.env.CRON_SECRET),
