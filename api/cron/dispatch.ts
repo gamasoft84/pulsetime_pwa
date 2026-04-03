@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getSql } from '../_lib/db'
+import { sendJson } from '../_lib/http'
 import { advanceReminderAfterSend } from '../_lib/remindersDb'
 import { sendPayloadToAllSubscriptions } from '../_lib/push'
 import type { Recurrence } from '../_lib/schedule'
@@ -30,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (secret) {
     const auth = req.headers.authorization
     if (auth !== `Bearer ${secret}`) {
-      res.status(401).json({ error: 'Unauthorized' })
+      sendJson(res, 401, { error: 'Unauthorized' })
       return
     }
   }
@@ -89,9 +90,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.status(200).json({ processed: due.length, sent })
+    sendJson(res, 200, { processed: due.length, sent })
   } catch (e) {
     console.error(e)
-    res.status(500).json({ error: e instanceof Error ? e.message : 'Error' })
+    sendJson(res, 500, { error: e instanceof Error ? e.message : 'Error' })
   }
 }

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getSql } from '../_lib/db'
+import { sendJson } from '../_lib/http'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -11,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const endpoint = body?.endpoint as string | undefined
     const keys = body?.keys as { p256dh?: string; auth?: string } | undefined
     if (!endpoint || !keys?.p256dh || !keys?.auth) {
-      res.status(400).json({ error: 'subscription inválida' })
+      sendJson(res, 400, { error: 'subscription inválida' })
       return
     }
     const sql = getSql()
@@ -22,9 +23,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         p256dh = EXCLUDED.p256dh,
         auth = EXCLUDED.auth
     `
-    res.status(200).json({ ok: true })
+    sendJson(res, 200, { ok: true })
   } catch (e) {
     console.error(e)
-    res.status(500).json({ error: e instanceof Error ? e.message : 'Error' })
+    sendJson(res, 500, { error: e instanceof Error ? e.message : 'Error' })
   }
 }

@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { sendJson } from './_lib/http'
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -7,8 +8,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   }
   const publicKey = process.env.VAPID_PUBLIC_KEY
   if (!publicKey) {
-    res.status(503).json({ error: 'VAPID no configurado' })
+    sendJson(res, 503, { error: 'VAPID no configurado' })
     return
   }
-  res.status(200).json({ publicKey })
+  sendJson(res, 200, { publicKey })
 }
