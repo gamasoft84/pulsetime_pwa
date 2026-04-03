@@ -1,5 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless'
-import { buildNotificationBody, firstFireAt, type Recurrence } from './schedule'
+import { buildNotificationBody, firstFireAt, type Recurrence } from './schedule.js'
 
 type ReminderRow = {
   id: string

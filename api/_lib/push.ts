@@ -1,5 +1,5 @@
 import webpush from 'web-push'
-import { getSql } from './db'
+import { getSql } from './db.js'
 
 let configured = false
 

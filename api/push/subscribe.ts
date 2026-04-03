@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getSql } from '../_lib/db'
-import { sendJson } from '../_lib/http'
+import { getSql } from '../_lib/db.js'
+import { sendJson } from '../_lib/http.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

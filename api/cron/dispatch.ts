@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
-import { getSql } from '../_lib/db'
-import { sendJson } from '../_lib/http'
-import { advanceReminderAfterSend } from '../_lib/remindersDb'
-import { sendPayloadToAllSubscriptions } from '../_lib/push'
-import type { Recurrence } from '../_lib/schedule'
+import { getSql } from '../_lib/db.js'
+import { sendJson } from '../_lib/http.js'
+import { advanceReminderAfterSend } from '../_lib/remindersDb.js'
+import { sendPayloadToAllSubscriptions } from '../_lib/push.js'
+import type { Recurrence } from '../_lib/schedule.js'
 
 type DueRow = {
   sched_id: string

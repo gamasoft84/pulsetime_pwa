@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { sendJson } from './_lib/http'
+import { sendJson } from './_lib/http.js'
 
 /** Diagnóstico sin secretos: comprueba que las funciones responden y qué env falta. */
 export default function handler(req: VercelRequest, res: VercelResponse) {

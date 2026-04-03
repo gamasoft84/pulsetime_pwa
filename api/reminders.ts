@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
-import { getSql } from './_lib/db'
-import { sendJson } from './_lib/http'
-import { rescheduleReminder } from './_lib/remindersDb'
+import { getSql } from './_lib/db.js'
+import { sendJson } from './_lib/http.js'
+import { rescheduleReminder } from './_lib/remindersDb.js'
 
 const KINDS = new Set([
   'credit_payment',
