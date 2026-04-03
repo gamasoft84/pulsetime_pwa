@@ -7,7 +7,7 @@ import {
   updateReminder,
 } from './api'
 import { AuthApiSync } from './AuthApiSync'
-import { getPushAvailability, subscribeToPush } from './push'
+import { getPushAvailability, hasActiveLocalPushSubscription, subscribeToPush } from './push'
 import type { Recurrence, Reminder, ReminderKind } from './types'
 
 const KIND_OPTIONS: { value: ReminderKind; label: string }[] = [
@@ -67,6 +67,7 @@ function MainApp() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pushStatus, setPushStatus] = useState<string | null>(null)
+  const [pushAlreadyActive, setPushAlreadyActive] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -86,6 +87,20 @@ function MainApp() {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (!getPushAvailability().ok) {
+      setPushAlreadyActive(false)
+      return
+    }
+    let cancelled = false
+    void hasActiveLocalPushSubscription().then((active) => {
+      if (!cancelled) setPushAlreadyActive(active)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   async function handleSubscribePush() {
     setPushStatus(null)
     const r = await subscribeToPush()
@@ -96,6 +111,7 @@ function MainApp() {
       error: 'Error al suscribirse. ¿Variables VAPID en el servidor?',
     }
     setPushStatus(messages[r])
+    if (r === 'ok') setPushAlreadyActive(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -220,12 +236,20 @@ function MainApp() {
           <li>Desde la app instalada, pulsa el botón de abajo para permitir notificaciones.</li>
         </ol>
         {pushAvailability.ok ? (
-          <button type="button" className="btn primary" onClick={() => void handleSubscribePush()}>
-            Activar notificaciones push
-          </button>
+          pushAlreadyActive ? (
+            <p className="push-feedback muted">
+              Notificaciones ya activas en este dispositivo. Si cambiaste de cuenta en PulseTime, pulsa
+              abajo para volver a registrar el dispositivo en el servidor.
+            </p>
+          ) : null
         ) : (
           <p className="muted push-hint">{pushAvailability.hint}</p>
         )}
+        {pushAvailability.ok ? (
+          <button type="button" className="btn primary" onClick={() => void handleSubscribePush()}>
+            {pushAlreadyActive ? 'Re-sincronizar notificaciones' : 'Activar notificaciones push'}
+          </button>
+        ) : null}
         {pushStatus ? <p className="push-feedback">{pushStatus}</p> : null}
       </section>
 

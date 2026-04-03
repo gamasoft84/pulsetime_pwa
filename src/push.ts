@@ -59,20 +59,46 @@ export function pushSupported(): boolean {
   return getPushAvailability().ok
 }
 
+/** Permiso concedido y suscripción push local ya creada (no garantiza que el servidor la tenga). */
+export async function hasActiveLocalPushSubscription(): Promise<boolean> {
+  if (!getPushAvailability().ok || typeof Notification === 'undefined') return false
+  if (Notification.permission !== 'granted') return false
+  try {
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    return !!sub
+  } catch {
+    return false
+  }
+}
+
 export async function subscribeToPush(): Promise<'ok' | 'unsupported' | 'denied' | 'error'> {
   if (!getPushAvailability().ok) {
     return 'unsupported'
   }
-  const permission = await Notification.requestPermission()
-  if (permission !== 'granted') return 'denied'
+  if (typeof Notification === 'undefined') {
+    return 'unsupported'
+  }
+
+  /** Solo pedir el diálogo del sistema si aún está en "preguntar"; si ya es granted, no llama de nuevo. */
+  if (Notification.permission === 'denied') {
+    return 'denied'
+  }
+  if (Notification.permission === 'default') {
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return 'denied'
+  }
 
   try {
     const reg = await navigator.serviceWorker.ready
-    const publicKey = await fetchVapidPublicKey()
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    })
+    let sub = await reg.pushManager.getSubscription()
+    if (!sub) {
+      const publicKey = await fetchVapidPublicKey()
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      })
+    }
     await postPushSubscription(sub.toJSON())
     return 'ok'
   } catch {
