@@ -39,11 +39,20 @@ export function buildNotificationBody(input: {
   title: string
   notes: string | null
   reference_date: string | null
+  amount: number | null
 }): string {
   if (input.kind === 'pet_memorial' && input.reference_date) {
     const y = yearsSinceReference(input.reference_date)
     const extra = input.notes?.trim() ? ` — ${input.notes.trim()}` : ''
     return `Hace ${y} año${y === 1 ? '' : 's'}${extra}`
+  }
+  if (input.kind === 'service_payment' && input.amount != null && input.amount > 0) {
+    const money = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+    }).format(input.amount)
+    const extra = input.notes?.trim() ? ` — ${input.notes.trim()}` : ''
+    return `${money}${extra}`
   }
   return (input.notes ?? '').trim()
 }

@@ -3,10 +3,12 @@ import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getClerkUserId } from './_lib/auth.js'
 import { getSql } from './_lib/db.js'
 import { sendJson } from './_lib/http.js'
+import { numOrNull, parseMoneyInput, roundMoney } from './_lib/money.js'
 import { rescheduleReminder } from './_lib/remindersDb.js'
 
 const KINDS = new Set([
   'credit_payment',
+  'service_payment',
   'subscription_cancel',
   'card_cancel',
   'event',
@@ -28,10 +30,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'GET') {
       const rows = await sql`
-        SELECT id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
+        SELECT id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, amount, is_active, created_at, updated_at
         FROM reminders WHERE user_id = ${userId} ORDER BY trigger_at ASC
       `
-      sendJson(res, 200, { reminders: rows })
+      sendJson(res, 200, {
+        reminders: (rows as Record<string, unknown>[]).map((r) => ({
+          ...r,
+          amount: numOrNull(r.amount),
+        })),
+      })
       return
     }
 
@@ -81,8 +88,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return
       }
 
+      let amount: number | null = null
+      if (kind === 'service_payment') {
+        const a = parseMoneyInput(b.amount)
+        if (a == null || a <= 0) {
+          sendJson(res, 400, { error: 'Indica un monto mayor que cero para pago de servicio.' })
+          return
+        }
+        amount = roundMoney(a)
+      }
+
       const inserted = await sql`
-        INSERT INTO reminders (user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active)
+        INSERT INTO reminders (user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, amount, is_active)
         VALUES (
           ${userId},
           ${title},
@@ -92,13 +109,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ${days_before},
           ${reference_date},
           ${notes},
+          ${amount},
           ${is_active}
         )
-        RETURNING id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
+        RETURNING id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, amount, is_active, created_at, updated_at
       `
-      const row = inserted[0] as { id: string }
-      await rescheduleReminder(sql, row.id)
-      sendJson(res, 201, { reminder: inserted[0] })
+      const row = inserted[0] as Record<string, unknown>
+      await rescheduleReminder(sql, String(row.id))
+      sendJson(res, 201, {
+        reminder: { ...row, amount: numOrNull(row.amount) },
+      })
       return
     }
 

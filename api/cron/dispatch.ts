@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getSql } from '../_lib/db.js'
 import { sendJson } from '../_lib/http.js'
+import { numOrNull } from '../_lib/money.js'
 import { advanceReminderAfterSend } from '../_lib/remindersDb.js'
 import { sendPayloadToUserSubscriptions } from '../_lib/push.js'
 import type { Recurrence } from '../_lib/schedule.js'
@@ -19,6 +20,7 @@ type DueRow = {
   days_before: number | null
   reference_date: string | null
   notes: string | null
+  amount: unknown
   is_active: boolean
 }
 
@@ -53,6 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         r.days_before,
         r.reference_date,
         r.notes,
+        r.amount,
         r.is_active
       FROM scheduled_notifications sn
       INNER JOIN reminders r ON r.id = sn.reminder_id
@@ -86,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           days_before: row.days_before,
           reference_date: row.reference_date,
           notes: row.notes,
+          amount: numOrNull(row.amount),
           is_active: row.is_active,
         }
         await advanceReminderAfterSend(sql, r, recurrence)

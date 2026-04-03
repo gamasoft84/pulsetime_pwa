@@ -1,5 +1,6 @@
 export type ReminderKind =
   | 'credit_payment'
+  | 'service_payment'
   | 'subscription_cancel'
   | 'card_cancel'
   | 'event'
@@ -18,6 +19,8 @@ export type Reminder = {
   days_before: number | null
   reference_date: string | null
   notes: string | null
+  /** Monto a pagar (solo aplica a `service_payment`); `null` en otros tipos. */
+  amount: number | null
   is_active: boolean
   created_at: string
   updated_at: string

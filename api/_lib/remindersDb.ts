@@ -1,4 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless'
+import { numOrNull } from './money.js'
 import { buildNotificationBody, firstFireAt, type Recurrence } from './schedule.js'
 
 type ReminderRow = {
@@ -10,6 +11,7 @@ type ReminderRow = {
   days_before: number | null
   reference_date: string | null
   notes: string | null
+  amount: number | null
   is_active: boolean
 }
 
@@ -33,6 +35,7 @@ export async function insertNextSchedule(
     title: r.title,
     notes: r.notes,
     reference_date: r.reference_date,
+    amount: numOrNull(r.amount as unknown),
   })
   await sql`
     INSERT INTO scheduled_notifications (reminder_id, fire_at, title, body)
@@ -43,7 +46,7 @@ export async function insertNextSchedule(
 export async function rescheduleReminder(sql: NeonQueryFunction, reminderId: string) {
   await deletePendingForReminder(sql, reminderId)
   const rows = (await sql`
-    SELECT id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active
+    SELECT id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, amount, is_active
     FROM reminders WHERE id = ${reminderId} LIMIT 1
   `) as ReminderRow[]
   const r = rows[0]

@@ -3,10 +3,12 @@ import type { NeonQueryFunction } from '@neondatabase/serverless'
 import { getClerkUserId } from '../_lib/auth.js'
 import { getSql } from '../_lib/db.js'
 import { sendJson } from '../_lib/http.js'
+import { numOrNull, parseMoneyInput, roundMoney } from '../_lib/money.js'
 import { rescheduleReminder } from '../_lib/remindersDb.js'
 
 const KINDS = new Set([
   'credit_payment',
+  'service_payment',
   'subscription_cancel',
   'card_cancel',
   'event',
@@ -49,11 +51,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : req.body && typeof req.body === 'object'
             ? req.body
             : {}
-      const existing = await sql`SELECT id FROM reminders WHERE id = ${id} AND user_id = ${userId} LIMIT 1`
+      const existing = await sql`
+        SELECT id, kind, amount FROM reminders WHERE id = ${id} AND user_id = ${userId} LIMIT 1
+      `
       if (!existing.length) {
         sendJson(res, 404, { error: 'no encontrado' })
         return
       }
+      const ex = existing[0] as { id: string; kind: string; amount: unknown }
 
       const title = b.title !== undefined ? String(b.title).trim() : undefined
       const kind = b.kind !== undefined ? String(b.kind) : undefined
@@ -73,6 +78,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const notes = b.notes !== undefined ? (b.notes == null ? null : String(b.notes)) : undefined
       const is_active = b.is_active !== undefined ? Boolean(b.is_active) : undefined
+
+      const nextKind = kind ?? ex.kind
+      let mergedAmount: number | null
+      if (nextKind !== 'service_payment') {
+        mergedAmount = null
+      } else if (b.amount !== undefined) {
+        if (b.amount === null || b.amount === '') mergedAmount = null
+        else {
+          const a = parseMoneyInput(b.amount)
+          mergedAmount = a == null ? null : roundMoney(a)
+        }
+      } else {
+        mergedAmount = numOrNull(ex.amount)
+      }
 
       if (title !== undefined && !title) {
         sendJson(res, 400, { error: 'title vacío' })
@@ -100,6 +119,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      if (nextKind === 'service_payment') {
+        if (mergedAmount == null || mergedAmount <= 0) {
+          sendJson(res, 400, {
+            error: 'Para pago de servicio indica un monto mayor que cero.',
+          })
+          return
+        }
+      }
+
       await sql`
         UPDATE reminders SET
           title = COALESCE(${title ?? null}, title),
@@ -109,6 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           days_before = COALESCE(${days_before !== undefined ? days_before : null}, days_before),
           reference_date = COALESCE(${reference_date !== undefined ? reference_date : null}, reference_date),
           notes = COALESCE(${notes !== undefined ? notes : null}, notes),
+          amount = ${mergedAmount},
           is_active = COALESCE(${is_active !== undefined ? is_active : null}, is_active),
           updated_at = NOW()
         WHERE id = ${id} AND user_id = ${userId}
@@ -116,10 +145,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await rescheduleReminder(sql, id)
       const rows = await sql`
-        SELECT id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, is_active, created_at, updated_at
+        SELECT id, user_id, title, kind, trigger_at, recurrence, days_before, reference_date, notes, amount, is_active, created_at, updated_at
         FROM reminders WHERE id = ${id} AND user_id = ${userId} LIMIT 1
       `
-      sendJson(res, 200, { reminder: rows[0] })
+      const row = rows[0] as Record<string, unknown>
+      sendJson(res, 200, { reminder: { ...row, amount: numOrNull(row.amount) } })
       return
     }
 

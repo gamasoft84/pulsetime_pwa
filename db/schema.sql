@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   days_before INT,
   reference_date DATE,
   notes TEXT,
+  amount NUMERIC(12, 2),
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

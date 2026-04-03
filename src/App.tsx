@@ -12,6 +12,7 @@ import type { Recurrence, Reminder, ReminderKind } from './types'
 
 const KIND_OPTIONS: { value: ReminderKind; label: string }[] = [
   { value: 'credit_payment', label: 'Pago tarjeta' },
+  { value: 'service_payment', label: 'Pago de servicio' },
   { value: 'subscription_cancel', label: 'Cancelar suscripción' },
   { value: 'card_cancel', label: 'Cancelar tarjeta' },
   { value: 'event', label: 'Evento' },
@@ -37,6 +38,13 @@ function fromDatetimeLocalValue(s: string): string {
   return new Date(s).toISOString()
 }
 
+function formatMoneyEs(amount: number) {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+  }).format(amount)
+}
+
 function emptyForm() {
   const t = new Date()
   t.setMinutes(0, 0, 0)
@@ -49,6 +57,7 @@ function emptyForm() {
     days_before: '' as string | number,
     reference_date: '',
     notes: '',
+    amount: '' as string | number,
     is_active: true,
   }
 }
@@ -100,6 +109,18 @@ function MainApp() {
       setError('Días de anticipación inválidos')
       return
     }
+    let amount: number | null = null
+    if (form.kind === 'service_payment') {
+      const raw =
+        form.amount === '' || form.amount === undefined
+          ? NaN
+          : Number(String(form.amount).trim().replace(',', '.'))
+      if (!Number.isFinite(raw) || raw <= 0) {
+        setError('Indica un monto mayor que cero para pago de servicio.')
+        return
+      }
+      amount = Math.round(raw * 100) / 100
+    }
     const payload = {
       title: form.title.trim(),
       kind: form.kind,
@@ -108,6 +129,7 @@ function MainApp() {
       days_before: days,
       reference_date: form.reference_date || null,
       notes: form.notes.trim() || null,
+      amount,
       is_active: form.is_active,
     }
     if (!payload.title) {
@@ -138,6 +160,7 @@ function MainApp() {
       days_before: r.days_before ?? '',
       reference_date: r.reference_date ? r.reference_date.slice(0, 10) : '',
       notes: r.notes ?? '',
+      amount: r.amount != null ? r.amount : '',
       is_active: r.is_active,
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -228,9 +251,14 @@ function MainApp() {
             Tipo
             <select
               value={form.kind}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, kind: e.target.value as ReminderKind }))
-              }
+              onChange={(e) => {
+                const k = e.target.value as ReminderKind
+                setForm((f) => ({
+                  ...f,
+                  kind: k,
+                  amount: k === 'service_payment' ? f.amount : '',
+                }))
+              }}
             >
               {KIND_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -276,6 +304,22 @@ function MainApp() {
               placeholder="0"
             />
           </label>
+          {form.kind === 'service_payment' ? (
+            <label>
+              Monto a pagar (MXN)
+              <input
+                type="number"
+                min={0.01}
+                step={0.01}
+                value={form.amount}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, amount: e.target.value === '' ? '' : e.target.value }))
+                }
+                placeholder="Ej. 450.50"
+                required
+              />
+            </label>
+          ) : null}
           {form.kind === 'pet_memorial' ? (
             <label>
               Fecha de referencia (ej. fallecimiento)
@@ -334,6 +378,9 @@ function MainApp() {
                   {RECURRENCE_OPTIONS.find((x) => x.value === r.recurrence)?.label}
                   {r.days_before != null && r.days_before > 0
                     ? ` · ${r.days_before} día(s) antes`
+                    : ''}
+                  {r.kind === 'service_payment' && r.amount != null
+                    ? ` · ${formatMoneyEs(r.amount)}`
                     : ''}
                 </p>
                 {!r.is_active ? <p className="muted small">Pausado</p> : null}

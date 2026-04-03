@@ -9,7 +9,7 @@ Backend: **Vercel** (API serverless + Cron) y **Neon** (Postgres). Cada persona 
 1. Cuenta en [Neon](https://neon.tech) y proyecto Postgres.
 2. Cuenta en [Vercel](https://vercel.com).
 3. Aplicación en [Clerk](https://dashboard.clerk.com) (email/redes sociales; sin configurar dominios custom al inicio).
-4. Crear las tablas en Neon (paso detallado abajo). Si **ya tenías** tablas sin `user_id`, ejecuta antes [`db/migrations/002_clerk_multi_user.sql`](db/migrations/002_clerk_multi_user.sql) (los datos antiguos quedan con `legacy_pre_auth` y no los verán usuarios de Clerk hasta que recrees recordatorios).
+4. Crear las tablas en Neon (paso detallado abajo). Si **ya tenías** tablas sin `user_id`, ejecuta antes [`db/migrations/002_clerk_multi_user.sql`](db/migrations/002_clerk_multi_user.sql) (los datos antiguos quedan con `legacy_pre_auth` y no los verán usuarios de Clerk hasta que recrees recordatorios). Si la tabla `reminders` no tiene la columna `amount`, ejecuta [`db/migrations/003_reminder_amount_service_payment.sql`](db/migrations/003_reminder_amount_service_payment.sql).
 
 ### Paso 1 detallado: ejecutar `db/schema.sql` en Neon
 
