@@ -4,11 +4,5 @@
   "devCommand": "npm run dev",
   "outputDirectory": "dist",
   "framework": null,
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
-  "crons": [
-    {
-      "path": "/api/cron/dispatch",
-      "schedule": "0 8 * * *"
-    }
-  ]
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
 }

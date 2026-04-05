@@ -216,8 +216,8 @@ function MainApp() {
       <header className="header">
         <div className="header-top">
           <div>
+            <p><&nbsp;</p>
             <h1>PulseTime</h1>
-            <p className="tagline">Recordatorios que llegan a tu iPhone (PWA + Web Push)</p>
           </div>
           <UserButton afterSignOutUrl="/" />
         </div>
