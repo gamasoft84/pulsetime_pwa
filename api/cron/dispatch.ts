@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       INNER JOIN reminders r ON r.id = sn.reminder_id
       WHERE sn.status = 'pending'
         AND sn.fire_at <= NOW()
-        AND (sn.fire_at AT TIME ZONE 'UTC')::date = (NOW() AT TIME ZONE 'UTC')::date
+        AND (sn.fire_at AT TIME ZONE 'America/Mexico_City')::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
       ORDER BY sn.fire_at ASC
       LIMIT 50
     `) as DueRow[]
