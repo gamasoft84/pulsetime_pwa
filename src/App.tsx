@@ -216,7 +216,7 @@ function MainApp() {
       <header className="header">
         <div className="header-top">
           <div>
-            <p><&nbsp;</p>
+            <p>&nbsp;</p>
             <h1>PulseTime</h1>
           </div>
           <UserButton afterSignOutUrl="/" />
